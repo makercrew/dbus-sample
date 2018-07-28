@@ -256,20 +256,42 @@ If you have Docker installed, then I have provided a container. The container ho
 ##### Create D-Bus Environment
 
 ```bash
-docker run -itd --name dbus-sample --rm makercrew/dbus-sample
+$ docker run -d --name dbus-sample --rm makercrew/dbus-sample
 ```
+
+For those of you who are unfamiliar with Docker, I would like to assure you this is one of the safest bits of sample code you can run. The container provides a sandbox that traps the application. We have  not specified any flags that would break the sandbox, thus providing access to your machine (_i.e. `--privileged`, `--volume`, `--network host`, etc...).
+
+The specified flags provide the following behavior:
+
+- `-d` - the process associated with this container will run as a background ("detached") process on the host (_your machine_)
+- `--name` - the name specified for the process (_if not supplied, Docker will create one for you_)
+- `--rm` - when this process is stopped, remove the container associated with the process
+
+Congratulations, you have now launched the D-Bus deamon as a detached process inside a Docker container (_a fully sandboxed process_)!
 
 ##### Play Around
 
 ```bash
-docker exec -it dbus-sample /bin/ash
+$ docker exec --interactive --tty dbus-sample /bin/ash
+# cd dbus-sample/
+# ls
 ```
+
+The specified flags provide the following behavior:
+
+- `--interactive` - the user (_you_) is requesting interactive shell access to the application
+- `--tty` -  allocate a pseudo-TTY for the container process
+
+The `docker exec` command allows you to attach to the container hosting the D-Bus daemon (_launched in the previous step_). The subsequent commands, with the `#` prefix, are commands that will be executed within the context of the container.
+Once you have executed the preceding commands, you will see the contents of this repository presented to you. You can now execute the sample above, or modify and experiment; even on Windows and Mac!
 
 ##### Clean Environment
 
 ```bash
-docker stop dbus-sample
+$ docker stop dbus-sample
 ```
+
+Once you have finished playing, be sure to kill the background (_detached_) process. In doing so, the supporting container will be cleaned up by the Docker daemon, courtesy of the `--rm` flag we passed to the original `docker run` command.
 
 > ***NOTE:** This is an Alpine based container (to save you space), and there are a couple of things you may not be familiar with and are worth calling out. This container uses the Almquist shell, `ash`, and the Alpine Linux Package Manager, `apk`.*
 
