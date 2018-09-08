@@ -108,9 +108,15 @@ So what about the string we pulled out of the message? Apparently, it gets clean
 D-Bus documentation states:
 > "Except for string arrays, the returned values are constant; do not free them. They point into the DBusMessage."
 
-Fair enough, but what about the connection to D-Bus itself? Nope, we leave it alone too. It turns out that we are attaching to a "shared connection", and we are not allowed to close it. In fact, if you try, then the library throws you a nice error message (below) to slap your hand.
+Fair enough, but what about the connection to D-Bus itself? Well, we are attaching to a "shared connection", therefore we are not allowed to close it. In fact, if you attempt to close the connection with the `dbus_connection_close` api, then the library throws you a nice error message (_shown below_); to slap your hand.
 
-> `process nnnn: Applications must not close shared connections - see dbus_connection_close() docs. This is a bug in the application.`
+    process nnnn: Applications must not close shared connections - see dbus_connection_close() docs. This is a bug in the application.
+
+Instead of closing the connection, we will simply _unreference_ the connection as we did with the messages.
+
+```c++
+::dbus_connection_unref(dbus_conn);
+```
 
 #### See Also
 
@@ -205,11 +211,13 @@ main (
 
     // Compose remote procedure call
     } else if ( nullptr == (dbus_msg = ::dbus_message_new_method_call("org.freedesktop.DBus", "/", "org.freedesktop.DBus.Introspectable", "Introspect")) ) {
+        ::dbus_connection_unref(dbus_conn);
         ::perror("ERROR: ::dbus_message_new_method_call - Unable to allocate memory for the message!");
 
     // Invoke remote procedure call, block for response
     } else if ( nullptr == (dbus_reply = ::dbus_connection_send_with_reply_and_block(dbus_conn, dbus_msg, DBUS_TIMEOUT_USE_DEFAULT, &dbus_error)) ) {
         ::dbus_message_unref(dbus_msg);
+        ::dbus_connection_unref(dbus_conn);
         ::perror(dbus_error.name);
         ::perror(dbus_error.message);
 
@@ -217,6 +225,7 @@ main (
     } else if ( !::dbus_message_get_args(dbus_reply, &dbus_error, DBUS_TYPE_STRING, &dbus_result, DBUS_TYPE_INVALID) ) {
         ::dbus_message_unref(dbus_msg);
         ::dbus_message_unref(dbus_reply);
+        ::dbus_connection_unref(dbus_conn);
         ::perror(dbus_error.name);
         ::perror(dbus_error.message);
 
@@ -233,6 +242,10 @@ main (
          * see dbus_connection_close() docs. This is a bug in the application.
          */
         //::dbus_connection_close(dbus_conn);
+
+        // When using the System Bus, unreference
+        // the connection instead of closing it
+        ::dbus_connection_unref(dbus_conn);
     }
 
     return 0;

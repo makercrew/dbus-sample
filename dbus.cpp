@@ -27,11 +27,13 @@ main (
 
     // Compose remote procedure call
     } else if ( nullptr == (dbus_msg = ::dbus_message_new_method_call("org.freedesktop.DBus", "/", "org.freedesktop.DBus.Introspectable", "Introspect")) ) {
+        ::dbus_connection_unref(dbus_conn);
         ::perror("ERROR: ::dbus_message_new_method_call - Unable to allocate memory for the message!");
 
     // Invoke remote procedure call, block for response
     } else if ( nullptr == (dbus_reply = ::dbus_connection_send_with_reply_and_block(dbus_conn, dbus_msg, DBUS_TIMEOUT_USE_DEFAULT, &dbus_error)) ) {
         ::dbus_message_unref(dbus_msg);
+        ::dbus_connection_unref(dbus_conn);
         ::perror(dbus_error.name);
         ::perror(dbus_error.message);
 
@@ -39,6 +41,7 @@ main (
     } else if ( !::dbus_message_get_args(dbus_reply, &dbus_error, DBUS_TYPE_STRING, &dbus_result, DBUS_TYPE_INVALID) ) {
         ::dbus_message_unref(dbus_msg);
         ::dbus_message_unref(dbus_reply);
+        ::dbus_connection_unref(dbus_conn);
         ::perror(dbus_error.name);
         ::perror(dbus_error.message);
 
@@ -55,6 +58,10 @@ main (
          * see dbus_connection_close() docs. This is a bug in the application.
          */
         //::dbus_connection_close(dbus_conn);
+
+        // When using the System Bus, unreference
+        // the connection instead of closing it
+        ::dbus_connection_unref(dbus_conn);
     }
 
     return 0;
